@@ -138,7 +138,7 @@ Crea un archivo `.env` en `services/server-admin/` con las siguientes variables:
 
 ```env
 # Base de Datos
-MONGO_URI=mongodb://localhost:27017/BIK
+URI_MONGODB=mongodb://localhost:27017/BIK
 DB_NAME=BIK
 
 # JWT y Seguridad

@@ -4,6 +4,7 @@ using BIK.CoreBanking.Data;
 using BIK.CoreBanking.DTOs;
 using System.Linq;
 using System.Threading.Tasks;
+using BIK.CoreBanking.Models;
 
 namespace BIK.CoreBanking.Controllers
 {
@@ -59,35 +60,35 @@ namespace BIK.CoreBanking.Controllers
 
             return Ok(history);
         }
-    }
 
-    [HttpPost("sync-account")]
-public async Task<IActionResult> SyncAccount([FromBody] SyncAccountRequest request)
-    {
-        if (request == null || string.IsNullOrEmpty(request.AccountNumber) || string.IsNullOrEmpty(request.UserId))
-            return BadRequest(new { message = "Datos de cuenta inválidos" });
-
-        var existingAccount = await _context.Accounts.FirstOrDefaultAsync(a => a.AccountNumber == request.AccountNumber);
-        if (existingAccount != null)
-            return Conflict(new { message = "El número de cuenta ya está registrado en el Core Banking" });
-
-        var newAccount = new Account
+        [HttpPost("sync-account")]
+        public async Task<IActionResult> SyncAccount([FromBody] SyncAccountRequest request)
         {
-            AccountNumber = request.AccountNumber,
-            UserId = request.UserId,
-            Balance = request.InitialBalance
-        };
+            if (request == null || string.IsNullOrEmpty(request.AccountNumber) || string.IsNullOrEmpty(request.UserId))
+                return BadRequest(new { message = "Datos de cuenta inválidos" });
 
-        _context.Accounts.Add(newAccount);
-        await _context.SaveChangesAsync();
+            var existingAccount = await _context.Accounts.FirstOrDefaultAsync(a => a.AccountNumber == request.AccountNumber);
+            if (existingAccount != null)
+                return Conflict(new { message = "El número de cuenta ya está registrado en el Core Banking" });
 
-        return CreatedAtAction(nameof(GetBalance), new { id = newAccount.Id }, newAccount);
+            var newAccount = new Account
+            {
+                AccountNumber = request.AccountNumber,
+                UserId = request.UserId,
+                Balance = request.InitialBalance 
+            };
+
+            _context.Accounts.Add(newAccount);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetBalance), new { id = newAccount.Id }, newAccount);
+        }
     }
 
-public class SyncAccountRequest
+    public class SyncAccountRequest
     {
-        public string AccountNumber { get; set; }
-        public string UserId { get; set; }
+        public string AccountNumber { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
         public decimal InitialBalance { get; set; }
     }
 }

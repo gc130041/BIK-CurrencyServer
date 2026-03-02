@@ -11,7 +11,7 @@ namespace BIK.AuditService.DTOs
 
         public int? AccountId { get; set; }
 
-        public int? UserId { get; set; }
+        public string? UserId { get; set; }
 
         [Required]
         public string Severity { get; set; } = "Info";

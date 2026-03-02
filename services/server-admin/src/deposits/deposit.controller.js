@@ -2,6 +2,7 @@
 
 import Deposit from './deposit.model.js';
 import Account from '../accounts/account.model.js';
+import axios from 'axios';
 import mongoose from 'mongoose';
 
 export const createDeposit = async (req, res) => {
@@ -17,7 +18,6 @@ export const createDeposit = async (req, res) => {
             });
         }
 
-        // 1. Buscar la cuenta de DESTINO
         const destinationAccount = await Account.findById(accountId);
         if (!destinationAccount) {
             return res.status(404).json({
@@ -35,40 +35,46 @@ export const createDeposit = async (req, res) => {
         let finalDescription = description;
 
         if (role === 'ADMIN_ROLE') {
-            // Caso ADMIN
+            try {
+                await axios.post('http://localhost:5045/BIK/v1/Transactions/deposit', {
+                    AccountNumber: destinationAccount.numberAccount,
+                    Amount: amount
+                });
+            } catch (coreError) {
+                return res.status(502).json({
+                    success: false,
+                    message: 'Error al sincronizar el depósito en el Core Banking',
+                    error: coreError.response?.data || coreError.message
+                });
+            }
+
             destinationAccount.earningsM += parseFloat(amount);
             finalDescription = description || `Depósito en Ventanilla (Admin: ${email})`;
-
             await destinationAccount.save();
         }
         else {
-            // Caso CLIENTE
             const sourceAccount = await Account.findOne({ email: email });
 
-            if (!sourceAccount) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'No tienes una cuenta bancaria asociada para realizar la transferencia.'
-                });
-            }
+            if (!sourceAccount) return res.status(404).json({ success: false, message: 'No tienes una cuenta asociada.' });
+            if (sourceAccount._id.equals(destinationAccount._id)) return res.status(400).json({ success: false, message: 'No puedes transferirte a tu propia cuenta.' });
+            if (sourceAccount.earningsM < amount) return res.status(400).json({ success: false, message: 'Fondos insuficientes.' });
 
-            if (sourceAccount._id.equals(destinationAccount._id)) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'No puedes transferirte a tu propia cuenta.'
+            try {
+                await axios.post('http://localhost:5045/BIK/v1/Transactions/transfer', {
+                    FromAccountNumber: sourceAccount.numberAccount,
+                    ToAccountNumber: destinationAccount.numberAccount,
+                    Amount: amount
                 });
-            }
-
-            if (sourceAccount.earningsM < amount) {
-                return res.status(400).json({
+            } catch (coreError) {
+                return res.status(502).json({
                     success: false,
-                    message: `Fondos insuficientes. Saldo actual: Q${sourceAccount.earningsM}`
+                    message: 'Error al sincronizar la transferencia en el Core Banking',
+                    error: coreError.response?.data || coreError.message
                 });
             }
 
             sourceAccount.earningsM -= parseFloat(amount);
             destinationAccount.earningsM += parseFloat(amount);
-
             finalDescription = description || `Transferencia de cuenta ${sourceAccount.numberAccount}`;
 
             await sourceAccount.save();

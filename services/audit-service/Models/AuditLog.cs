@@ -11,22 +11,23 @@ namespace BIK.AuditService.Models
 
         [Required]
         [Column(TypeName = "varchar(50)")]
-        public string ActionType { get; set; } = string.Empty; // Ej: "Transaction", "LoginAttempt", "SuspiciousActivity"
+        public string ActionType { get; set; } = string.Empty; 
 
         [Column(TypeName = "varchar(255)")]
-        public string Description { get; set; } = string.Empty; // Detalles
+        public string Description { get; set; } = string.Empty; 
 
-        public int? AccountId { get; set; } // Puede ser null si la actividad no está ligada a una cuenta específica
+        public int? AccountId { get; set; } 
 
-        public int? UserId { get; set; } // Puede ser null si es un intento de acceso no identificado
+        [Column(TypeName = "varchar(24)")]
+        public string? UserId { get; set; } 
 
         [Required]
         [Column(TypeName = "varchar(50)")]
-        public string Severity { get; set; } = "Info"; // "Info", "Warning", "Critical"
+        public string Severity { get; set; } = "Info"; 
 
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
         [Column(TypeName = "varchar(50)")]
-        public string SourceIpAddress { get; set; } = string.Empty; // Útil para rastrear actividad sospechosa
+        public string SourceIpAddress { get; set; } = string.Empty; 
     }
 }
